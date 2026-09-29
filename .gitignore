@@ -1,0 +1,23 @@
+# Ambiente virtual (uv)
+.venv/
+
+# Clone de referência do professor (repositório externo: github.com/sandeco/pix-golpe)
+pix-golpe/
+
+# Pesos e pacotes de modelo (grandes demais para o GitHub — obter via Colab)
+models/
+*.onnx
+*.safetensors
+
+# Logs de execução (fuso America/Sao_Paulo, gerados a cada run)
+logs/
+
+# Cache/artefatos Python e ferramentas
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Locais
+.env
+tmp/

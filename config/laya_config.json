@@ -1,0 +1,41 @@
+{
+  "projeto": "gmr_pix_golpe",
+  "timezone": "America/Sao_Paulo",
+  "paths": {
+    "mensagens_raw": "data/raw/mensagens.jsonl",
+    "decisoes_raw": "data/raw/decisions.csv",
+    "diretorio_processado": "data/processed",
+    "arquivo_treino": "data/processed/laya_pix_golpe_treino.jsonl",
+    "arquivo_validacao": "data/processed/laya_pix_golpe_validacao.jsonl",
+    "arquivo_resumo": "data/processed/resumo_dataset.json",
+    "diretorio_logs": "logs",
+    "diretorio_modelos": "models",
+    "diretorio_modelo_finetunado": "models/laya_pix_golpe_finetuned"
+  },
+  "modelo": {
+    "checkpoint_hf": "convaiinnovations/laya",
+    "subfolder": "multilingual",
+    "dispositivo_colab": "cuda",
+    "max_len": 1024,
+    "head_max_len": 256
+  },
+  "dataset": {
+    "workflow": "pix_golpe",
+    "proporcao_treino": 0.8,
+    "semente": 42,
+    "campo_ground_truth": "golpe_real",
+    "lado_teacher": "python",
+    "lado_fallback": "rust",
+    "fonte_perguntas": "pix-golpe/src/jev.rs::questions()"
+  },
+  "treinamento": {
+    "epocas": 4,
+    "micro_batch": 8,
+    "grad_accum": 8,
+    "lr_encoder": 2.5e-5,
+    "lr_head": 1e-4,
+    "sigma_inicial": 0.4,
+    "sigma_final": 0.1,
+    "calib_max": 400
+  }
+}

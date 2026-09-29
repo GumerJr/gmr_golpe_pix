@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>DETECTOR DE GOLPE — Laya fine-tuned (Python)</title>
+  <style>
+    :root { color-scheme: dark; font-family: "Segoe UI", Arial, sans-serif; background: #080b12; color: #f3f5fa; font-synthesis: none; }
+    * { box-sizing: border-box; }
+    body { margin: 0; scrollbar-width: thin; scrollbar-color: #1a2130 transparent; }
+    h1, h2, p, dl, dd { margin: 0; }
+    button, select { font: inherit; cursor: pointer; }
+    button:disabled, select:disabled { opacity: .45; cursor: default; }
+    [hidden] { display: none !important; }
+    #stage { max-width: 1280px; margin-inline: auto; padding: 0 24px 24px; display: grid; gap: 18px;
+             background: radial-gradient(ellipse at 12% 0, #59e0a414, transparent 750px), #0b0f18; min-height: 100vh; }
+    .topbar { position: sticky; top: 0; z-index: 10; min-height: 84px; padding: 14px 0; display: flex; align-items: center;
+              justify-content: space-between; gap: 24px; background: #0b0f18f5; border-bottom: 1px solid #ffffff12; backdrop-filter: blur(12px); }
+    h1 { font-size: 30px; font-weight: 900; letter-spacing: -1.2px; }
+    h1 .accent { color: #59e0a4; }
+    .controls { display: flex; align-items: center; gap: 14px; }
+    .connection { display: flex; align-items: center; gap: 9px; color: #a7b1c1; font-size: 14px; }
+    .connection::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #f3bb62; }
+    .connection[data-state="connected"]::before { background: #59e0a4; box-shadow: 0 0 12px #59e0a433; }
+    .mode-control { display: flex; align-items: center; gap: 10px; }
+    .mode-control label { font-size: 15px; color: #a7b1c1; }
+    select { background: #171e2b; color: #f3f5fa; border: 1px solid #354052; border-radius: 10px; padding: 12px 34px 12px 12px; font-size: 15px; }
+    .start { min-width: 150px; height: 46px; padding: 0 22px; border: 0; border-radius: 10px; background: #eef4f8; color: #111923; font-size: 17px; font-weight: 750; }
+    .start:hover:enabled { background: #fff; }
+    .start[data-action="stop"] { background: #c72c42; color: #fff; }
+    .report-button { height: 46px; padding: 0 18px; border: 1px solid #53627c; border-radius: 10px; background: #1b2536; color: #eef4f8; font-size: 15px; font-weight: 650; }
+    .report-button:hover:enabled { background: #29374e; }
+    .lane { --accent: #59e0a4; --accent-light: #a9f5d2; --accent-dark: #1d4433; min-width: 0; padding: 18px 22px;
+            border: 1px solid #59e0a440; border-top: 4px solid var(--accent); border-radius: 20px;
+            background: linear-gradient(155deg, #59e0a40c, transparent 600px), #111722; display: grid; gap: 16px; }
+    .lane h2 { color: var(--accent); font-size: 22px; font-weight: 750; letter-spacing: -.5px; }
+    .lane h2 small { color: #9da9ba; font-size: 14px; font-weight: 500; margin-left: 10px; }
+    .lane-top { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 18px; align-items: center; }
+    .count-line { display: flex; align-items: baseline; gap: 10px; font-variant-numeric: tabular-nums; }
+    .processed { font-size: 72px; font-weight: 800; line-height: 1; letter-spacing: -4px; color: var(--accent); }
+    .out-of { color: #a6b1c2; font-size: 26px; font-weight: 500; }
+    .counter-label { font-size: 12px; letter-spacing: 2px; font-weight: 650; color: #9da9ba; margin-top: 6px; }
+    .progress { height: 12px; border-radius: 8px; overflow: hidden; background: var(--accent-dark); margin-top: 12px; }
+    .progress-fill { height: 100%; width: 0; background: var(--accent); transition: width 140ms linear; }
+    .speed { display: grid; gap: 6px; }
+    .speed-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-variant-numeric: tabular-nums; }
+    .speed-row dt { font-size: 12px; letter-spacing: 1px; font-weight: 650; color: #9da9ba; }
+    .speed-row dd { margin: 0; font-size: 19px; font-weight: 750; color: var(--accent-light); }
+    .speed-row dd small { font-size: 12px; font-weight: 500; color: #a6b1c2; margin-left: 4px; }
+    .bubble { border: 1px solid #ffffff12; background: #1b2331; text-align: left; padding: 12px 16px; border-radius: 6px 16px 16px 16px; overflow: hidden; }
+    .sender { font-size: 14px; font-weight: 650; color: #b8c4d5; line-height: 20px; margin-bottom: 4px; }
+    .sender::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--accent); }
+    .message-text { font-size: 19px; line-height: 1.3; font-weight: 450; overflow-wrap: anywhere; white-space: pre-wrap; }
+    .verdict { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #ffffff12; border-radius: 10px; background: #ffffff04; margin-top: 10px; }
+    .verdict-symbol { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 24px; border: 2px solid currentColor; border-radius: 50%; font-size: 15px; font-weight: 800; }
+    .verdict-word { font-size: 18px; font-weight: 850; letter-spacing: -.5px; }
+    .verdict-meta { font-size: 14px; color: #c7d0dd; margin-left: auto; text-align: right; line-height: 1.35; }
+    .verdict[data-verdict="waiting"] { color: #76859a; }
+    .verdict[data-verdict="ok"] { color: #79efb5; border-color: #3c9a6a80; background: #143929; }
+    .verdict[data-verdict="revisar"] { color: #ffda79; border-color: #b3964680; background: #3b311b; }
+    .verdict[data-verdict="golpe"] { color: #fff; border-color: #ff6975; background: #d62d42; animation: pulse 720ms ease-in-out infinite; }
+    @keyframes pulse { 50% { box-shadow: 0 0 22px #d62d4266; } }
+    .truth { font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-left: 8px; }
+    .truth[data-real="golpe"] { color: #ff8f9a; border: 1px solid #ff697540; }
+    .truth[data-real="normal"] { color: #79efb5; border: 1px solid #3c9a6a40; }
+    .hit { color: #59e0a4; } .miss { color: #ff6975; }
+    #feed { display: grid; gap: 10px; max-height: 560px; overflow-y: auto; padding-right: 6px; }
+    .card { display: grid; gap: 4px; padding: 10px 14px; border-radius: 12px; border: 1px solid #ffffff12; background: #131a26; font-size: 14px; }
+    .card .head { display: flex; align-items: center; gap: 8px; color: #b8c4d5; font-weight: 650; }
+    .card .prob { margin-left: auto; font-variant-numeric: tabular-nums; color: #9da9ba; font-weight: 500; }
+    .card .texto { color: #dbe3ee; overflow-wrap: anywhere; }
+    .card[data-verdict="golpe"] { border-color: #d62d4280; background: #241318; }
+    .card[data-verdict="revisar"] { border-color: #b3964680; background: #211c10; }
+    .card .chip { font-weight: 800; }
+    .chip[data-verdict="golpe"] { color: #ff6975; }
+    .chip[data-verdict="ok"] { color: #79efb5; }
+    .chip[data-verdict="revisar"] { color: #ffda79; }
+    #report { display: grid; gap: 14px; padding: 20px 22px; border: 1px solid #6985f650; border-top: 4px solid #6985f6; border-radius: 20px;
+              background: linear-gradient(155deg, #6985f612, transparent 600px), #111722; }
+    #report h2 { color: #6985f6; font-size: 22px; }
+    table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    th, td { padding: 8px 14px; border: 1px solid #ffffff1a; text-align: center; font-size: 15px; }
+    th { background: #1b2331; }
+    .metrics { display: flex; gap: 22px; flex-wrap: wrap; }
+    .metric { display: grid; gap: 2px; }
+    .metric b { font-size: 24px; color: #a7b8ff; }
+    .metric span { font-size: 12px; letter-spacing: 1.5px; color: #9da9ba; font-weight: 650; }
+    .ref { color: #9da9ba; font-size: 14px; }
+    .ref b { color: #c7d0dd; }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <header class="topbar">
+      <h1>DETECTOR DE GOLPE <span class="accent">— Laya fine-tuned</span></h1>
+      <div class="controls">
+        <span class="connection" id="conn" data-state="connecting">conectando…</span>
+        <div class="mode-control">
+          <label for="speed">Ritmo</label>
+          <select id="speed">
+            <option value="0" selected>Normal (sem pausa)</option>
+            <option value="4">Narrado · 4 s</option>
+          </select>
+        </div>
+        <button class="start" id="btn-start" data-action="start" disabled>Iniciar</button>
+        <button class="report-button" id="btn-report" hidden>Relatório de acurácia</button>
+      </div>
+    </header>
+
+    <section class="lane">
+      <h2>Python + Laya (fine-tuned, local CPU)<small>laya-pix-golpe · 1000 mensagens do pix-golpe</small></h2>
+      <div class="lane-top">
+        <div>
+          <div class="count-line">
+            <span class="processed" id="n-processed">0</span>
+            <span class="out-of">/ <span id="n-total">–</span></span>
+          </div>
+          <div class="counter-label">MENSAGENS PROCESSADAS</div>
+          <div class="progress"><div class="progress-fill" id="progress"></div></div>
+        </div>
+        <dl class="speed">
+          <div class="speed-row"><dt>ÚLTIMA DECISÃO</dt><dd id="s-last">– <small>ms</small></dd></div>
+          <div class="speed-row"><dt>MÉDIA</dt><dd id="s-avg">– <small>ms</small></dd></div>
+          <div class="speed-row"><dt>GOLPES DETECTADOS</dt><dd id="s-golpes">0</dd></div>
+          <div class="speed-row"><dt>ERROS vs VERDADE</dt><dd id="s-erros">0</dd></div>
+        </dl>
+      </div>
+      <div class="bubble" id="current" data-empty="true">
+        <span class="sender">aguardando início</span>
+        <span class="message-text">Clique em Iniciar para processar as 1000 mensagens do dataset.</span>
+      </div>
+      <div class="verdict" id="verdict" data-verdict="waiting">
+        <span class="verdict-symbol">?</span>
+        <span class="verdict-word">aguardando decisão</span>
+        <span class="verdict-meta" id="verdict-meta"></span>
+      </div>
+      <div id="feed"></div>
+    </section>
+
+    <section id="report" hidden>
+      <h2>📊 Relatório de acurácia — protocolo do paper</h2>
+      <table id="report-table">
+        <thead>
+          <tr><th>real \ predito</th><th>golpe</th><th>ok</th><th>revisar</th></tr>
+        </thead>
+        <tbody>
+          <tr><th>golpe</th><td id="c-gg">0</td><td id="c-go">0</td><td id="c-gr">0</td></tr>
+          <tr><th>normal</th><td id="c-ng">0</td><td id="c-no">0</td><td id="c-nr">0</td></tr>
+        </tbody>
+      </table>
+      <div class="metrics">
+        <div class="metric"><b id="m-acc">–</b><span>ACURÁCIA</span></div>
+        <div class="metric"><b id="m-prec">–</b><span>PRECISÃO</span></div>
+        <div class="metric"><b id="m-rec">–</b><span>RECALL</span></div>
+        <div class="metric"><b id="m-p95">–</b><span>LATÊNCIA p95</span></div>
+      </div>
+      <p class="ref" id="m-ref"></p>
+    </section>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const conn = $("conn"), btnStart = $("btn-start"), btnReport = $("btn-report"), speed = $("speed");
+    let ultimoRelatorio = null;
+
+    function ligar() {
+      const ws = new WebSocket(`ws://${location.host}/ws`);
+      ws.onopen = () => { conn.dataset.state = "connected"; conn.textContent = "conectado"; btnStart.disabled = false; };
+      ws.onclose = () => { conn.dataset.state = "connecting"; conn.textContent = "reconectando…";
+                          btnStart.disabled = true; setTimeout(ligar, 1500); };
+      ws.onmessage = (ev) => {
+        const msg = JSON.parse(ev.data);
+        if (msg.type === "iniciado") {
+          $("n-total").textContent = msg.total;
+          $("n-processed").textContent = "0";
+          $("feed").innerHTML = "";
+          $("report").hidden = true; btnReport.hidden = true;
+        } else if (msg.type === "decisao") {
+          renderDecisao(msg);
+        } else if (msg.type === "fim") {
+          ultimoRelatorio = msg.relatorio;
+          mostrarRelatorio(msg.relatorio);
+          btnStart.dataset.action = "start"; btnStart.textContent = "Iniciar";
+          btnReport.hidden = false;
+        }
+      };
+      window._ws = ws;
+    }
+
+    btnStart.onclick = () => {
+      if (btnStart.dataset.action === "start") {
+        window._ws.send(JSON.stringify({ cmd: "iniciar", intervalo: parseFloat(speed.value) }));
+        btnStart.dataset.action = "stop"; btnStart.textContent = "Parar";
+      } else {
+        window._ws.send(JSON.stringify({ cmd: "parar" }));
+        btnStart.dataset.action = "start"; btnStart.textContent = "Iniciar";
+      }
+    };
+    btnReport.onclick = () => { if (ultimoRelatorio) { $("report").hidden = false; $("report").scrollIntoView({ behavior: "smooth" }); } };
+
+    function renderDecisao(m) {
+      $("n-processed").textContent = m.placar.processadas;
+      const total = parseInt($("n-total").textContent) || 1;
+      $("progress").style.width = `${(100 * m.placar.processadas / total).toFixed(1)}%`;
+      $("s-last").innerHTML = `${m.latencia_ms.toFixed(0)} <small>ms</small>`;
+      $("s-avg").innerHTML = `${m.placar.latencia_media_ms.toFixed(0)} <small>ms</small>`;
+      $("s-golpes").textContent = m.placar.golpes_detectados;
+      $("s-erros").textContent = m.placar.erros;
+
+      $("current").dataset.empty = "false";
+      $("current").querySelector(".sender").textContent = `#${m.id} · ${m.remetente}`;
+      $("current").querySelector(".message-text").textContent = m.texto;
+
+      const v = $("verdict");
+      v.dataset.verdict = m.veredito;
+      v.querySelector(".verdict-symbol").textContent = m.veredito === "golpe" ? "!" : m.veredito === "ok" ? "✓" : "?";
+      v.querySelector(".verdict-word").textContent =
+        m.veredito === "golpe" ? `GOLPE · ${(m.prob_golpe * 100).toFixed(0)}%` :
+        m.veredito === "ok" ? "MENSAGEM NORMAL" : "SUSPEITA — revisar";
+      $("verdict-meta").innerHTML =
+        `tipo: <b>${m.tipo}</b> (${(m.tipo_confianca * 100).toFixed(0)}%) · urgência ${m.urgencia.toFixed(1)}/2 · pede_pix ${(m.pede_pix * 100).toFixed(0)}%`;
+
+      const correto = (m.veredito === "golpe") === m.golpe_real;
+      const card = document.createElement("div");
+      card.className = "card"; card.dataset.verdict = m.veredito;
+      card.innerHTML =
+        `<div class="head">#${m.id} · ${m.remetente}
+           <span class="chip" data-verdict="${m.veredito}">${m.veredito.toUpperCase()}</span>
+           <span class="truth" data-real="${m.golpe_real ? "golpe" : "normal"}">real: ${m.golpe_real ? "golpe" : "normal"}</span>
+           <span class="${correto ? "hit" : "miss"}">${correto ? "● acerto" : "● erro"}</span>
+           <span class="prob">p=${m.prob_golpe.toFixed(3)} · ${m.latencia_ms.toFixed(0)} ms</span></div>
+         <div class="texto">${m.texto}</div>`;
+      $("feed").prepend(card);
+    }
+
+    function mostrarRelatorio(r) {
+      $("c-gg").textContent = r.matriz.golpe.golpe; $("c-go").textContent = r.matriz.golpe.ok; $("c-gr").textContent = r.matriz.golpe.revisar;
+      $("c-ng").textContent = r.matriz.normal.golpe; $("c-no").textContent = r.matriz.normal.ok; $("c-nr").textContent = r.matriz.normal.revisar;
+      $("m-acc").textContent = (r.acuracia * 100).toFixed(1) + "%";
+      $("m-prec").textContent = (r.precisao * 100).toFixed(1) + "%";
+      $("m-rec").textContent = (r.recall * 100).toFixed(1) + "%";
+      $("m-p95").textContent = r.latencia_p95_ms.toFixed(0) + " ms";
+      $("m-ref").innerHTML = `Total: <b>${r.total}</b> mensagens · golpes reais: <b>${r.golpes_reais}</b> · ` +
+        `detectados: <b>${r.golpes_detectados}</b> · referência do paper: <b>DeepSeek 100% · Jev 99,9%</b>`;
+      $("report").hidden = false;
+    }
+
+    ligar();
+  </script>
+</body>
+</html>

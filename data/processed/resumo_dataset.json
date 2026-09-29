@@ -1,0 +1,28 @@
+{
+  "gerado_em": "2026-09-29T15:12:02.137441-03:00",
+  "total_mensagens": 1000,
+  "treino": {
+    "n": 800,
+    "golpes": 60
+  },
+  "validacao": {
+    "n": 200,
+    "golpes": 15
+  },
+  "distribuicao_tipo": {
+    "troca_numero": 15,
+    "boleto_falso": 8,
+    "falsa_central": 32,
+    "premio": 8,
+    "pix_errado": 6,
+    "cobranca_legitima": 362,
+    "pessoal": 511,
+    "outro": 58
+  },
+  "perguntas_tipadas": [
+    "golpe",
+    "tipo",
+    "urgencia",
+    "pede_pix"
+  ]
+}
