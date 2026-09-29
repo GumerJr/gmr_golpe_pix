@@ -15,7 +15,7 @@ rodando 100% local em CPU. O pipeline tem 3 grandes blocos:
 | Bloco | Onde | O que faz |
 |---|---|---|
 | **Preparação de dados** | local (`src/preparar_dataset.py`) | Reconstrói o dataset no formato oficial de fine-tuning do Laya |
-| **Treinamento** | Google Colab, 1× T4 (`notebooks/treinamento_laya_colab.ipynb`) | RLCD + calibração + exportação ONNX INT8 |
+| **Treinamento** | Google Colab, 1× T4 (`notebooks/treinamento_laya_colab.ipynb`) | RLCD + calibração + exportação ONNX fp32 |
 | **Inferência/demo** | local CPU (`src/servidor_web.py`, `src/inferir.py`) | Decisão tipada em 1 forward pass + demo web |
 
 ## 2. Fluxo de dados de ponta a ponta
@@ -51,7 +51,7 @@ rodando 100% local em CPU. O pipeline tem 3 grandes blocos:
                  │ models/laya_pix_golpe_finetuned/  (weights + tokenizer + rl_agent_config + laya.int8.onnx)
                  ▼
 ┌─ Inferência local (CPU, sem GPU) ─────────────────────────────────────────────┐
-│ src/laya_comum.py    carregar_agente: prefere ONNX INT8 (onnxruntime) →       │
+│ src/laya_comum.py    carregar_agente: prefere ONNX fp32 (onnxruntime) →       │
 │                      fallback PyTorch fp16 · veredito 3 faixas · logging      │
 │ src/servidor_web.py  FastAPI + WebSocket · percorre as 1000 mensagens ·       │
 │                      relatório (matriz 3×2, acurácia, precisão, recall)       │

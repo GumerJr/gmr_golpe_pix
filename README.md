@@ -33,7 +33,7 @@ pix-golpe (clone, referência)                 Google Colab (T4)                
 data/mensagens.jsonl  ──┐
 data/raw/decisions.csv ─┼─► src/preparar_dataset.py ─► data/processed/*.jsonl ─► treino RLCD (4 épocas)
  (teacher DeepSeek)     │      (labels: golpe_real + teacher)                    + calibração de temperatura
-                        │                                                        + exportação ONNX INT8
+                        │                                                        + exportação ONNX fp32
                         │                                                              │ zip
                         ▼                                                              ▼
               4 perguntas tipadas do paper:                                  models/laya_pix_golpe_finetuned/
