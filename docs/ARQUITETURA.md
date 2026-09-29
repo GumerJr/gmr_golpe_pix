@@ -53,7 +53,8 @@ rodando 100% local em CPU. O pipeline tem 3 grandes blocos:
 ┌─ Inferência local (CPU, sem GPU) ─────────────────────────────────────────────┐
 │ src/laya_comum.py    carregar_agente: prefere ONNX fp32 (onnxruntime) →       │
 │                      fallback PyTorch fp16 · veredito 3 faixas · logging      │
-│ src/servidor_web.py  FastAPI + WebSocket · percorre as 1000 mensagens ·       │
+│ src/servidor_web.py  FastAPI + WebSocket · percorre o holdout de validação    │
+│                      (200 mensagens nunca treinadas: 15 golpes / 185 legít.)  │
 │                      relatório (matriz 3×2, acurácia, precisão, recall)       │
 │ static/index.html    UI dark: feed ao vivo, placar, relatório                 │
 │ src/inferir.py       CLI single-shot / interativo                             │
@@ -132,8 +133,12 @@ Isso torna nossos números comparáveis 1:1 com o `paper/` do repositório origi
 
 ## 6. Limitações conhecidas
 
-- Dataset **sintético templated**: a acurácia de validação (0,980 global / 1,000 no veredito)
+- Dataset **sintético templated**: a acurácia de validação (0,981 global / 1,000 no veredito)
   mede especialização no domínio sintético, não generalização para golpes reais inéditos.
+- **Teste oficial no holdout**: a demo/teste roda exclusivamente as 200 mensagens de
+  validação (15 golpes / 185 legítimas) que **nunca entraram no treino** — medida cega e
+  reproduzível. Confirmado em 29/09/2026 com o ONNX fp32 local: acurácia 1.000, precisão
+  1.000, recall 1.000 (15/15 golpes, 185/185 legítimas).
 - Temperaturas calibradas ~5 são truncadas ao teto 5,0 do Laya no load (aviso benigno;
   ECE medido 0,012).
 - Classes raras de `tipo` (ex.: `pix_errado`, 6 exemplos) concentram os poucos erros —

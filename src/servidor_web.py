@@ -100,10 +100,15 @@ class Placar:
 
 
 def carregar_mensagens(caminho: Path, logger: logging.Logger) -> list[Mensagem]:
-    """Lê as mensagens do dataset Pix Race.
+    """Lê as mensagens da corrida, detectando o formato do arquivo.
+
+    Suporta o formato bruto do Pix Race (``id``, ``remetente``, ``texto``,
+    ``golpe_real``) e o formato processado Laya (``state``/``gold``), usado no
+    holdout de validação — o teste oficial do projeto (200 mensagens nunca
+    treinadas).
 
     Args:
-        caminho: Caminho do ``mensagens.jsonl``.
+        caminho: Caminho do JSONL de mensagens (bruto ou processado).
         logger: Logger central.
 
     Returns:
@@ -120,15 +125,32 @@ def carregar_mensagens(caminho: Path, logger: logging.Logger) -> list[Mensagem]:
             if not linha.strip():
                 continue
             bruto: dict[str, Any] = json.loads(linha)
-            mensagens.append(
-                Mensagem(
-                    id=int(bruto["id"]),
-                    remetente=str(bruto["remetente"]),
-                    texto=str(bruto["texto"]),
-                    golpe_real=bool(bruto["golpe_real"]),
+            if "gold" in bruto:  # formato processado do dataset Laya
+                state: dict[str, Any] = json.loads(str(bruto["state"]))
+                gold: dict[str, Any] = json.loads(str(bruto["gold"]))
+                mensagens.append(
+                    Mensagem(
+                        id=int(bruto["id"]),
+                        remetente=str(state["remetente"]),
+                        texto=str(state["mensagem"]),
+                        golpe_real=gold["golpe"]["label"] == "true",
+                    )
                 )
-            )
-    logger.info("📥 %d mensagens carregadas (%d golpes)", len(mensagens), sum(1 for m in mensagens if m.golpe_real))
+            else:  # formato bruto do Pix Race
+                mensagens.append(
+                    Mensagem(
+                        id=int(bruto["id"]),
+                        remetente=str(bruto["remetente"]),
+                        texto=str(bruto["texto"]),
+                        golpe_real=bool(bruto["golpe_real"]),
+                    )
+                )
+    logger.info(
+        "📥 %d mensagens carregadas de %s (%d golpes)",
+        len(mensagens),
+        caminho,
+        sum(1 for m in mensagens if m.golpe_real),
+    )
     return mensagens
 
 
@@ -302,7 +324,7 @@ def main() -> int:
     logger = configurar_logging(RAIZ / "logs", "servidor_web")
     try:
         config: dict[str, Any] = json.loads((RAIZ / "config" / "laya_config.json").read_text(encoding="utf-8"))
-        mensagens = carregar_mensagens(RAIZ / config["paths"]["mensagens_raw"], logger)
+        mensagens = carregar_mensagens(RAIZ / config["paths"]["arquivo_demo"], logger)
         agente = carregar_agente(RAIZ / config["paths"]["diretorio_modelo_finetunado"], logger)
     except (FileNotFoundError, KeyError, json.JSONDecodeError) as exc:
         logger.error("❌ %s", exc)

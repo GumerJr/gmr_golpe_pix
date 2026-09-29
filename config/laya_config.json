@@ -8,6 +8,7 @@
     "arquivo_treino": "data/processed/laya_pix_golpe_treino.jsonl",
     "arquivo_validacao": "data/processed/laya_pix_golpe_validacao.jsonl",
     "arquivo_resumo": "data/processed/resumo_dataset.json",
+    "arquivo_demo": "data/processed/laya_pix_golpe_validacao.jsonl",
     "diretorio_logs": "logs",
     "diretorio_modelos": "models",
     "diretorio_modelo_finetunado": "models/laya_pix_golpe_finetuned"

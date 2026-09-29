@@ -11,7 +11,17 @@ Python + DeepSeek — usando **apenas o nosso modelo fine-tunado**, rodando **10
 
 ---
 
-## 📊 Resultados (validação — 200 mensagens, 800 decisões)
+## 📊 Resultados oficiais — holdout de validação
+
+**Teste executado exclusivamente no holdout de validação: 200 mensagens nunca treinadas
+(15 golpes / 185 legítimas)**, gerado por split estratificado (semente 42) do dataset
+original. A demo web (`src/servidor_web.py`) percorre exatamente essas 200 mensagens.
+
+Confirmação local (29/09/2026, ONNX fp32 em CPU): matriz 3×2 perfeita — 15 golpes
+detectados com p≈0,999, 185 legítimas como ok, zero falsos positivos/negativos,
+**acurácia 1.000 · precisão 1.000 · recall 1.000**.
+
+Métricas detalhadas medidas no Colab (T4, mesmas 200 mensagens, 800 decisões tipadas):
 
 | Pergunta tipada | Acurácia |
 |---|---|
@@ -49,7 +59,8 @@ data/raw/decisions.csv ─┼─► src/preparar_dataset.py ─► data/processe
    (policy gradient GRPO + cross-entropy), calibração de temperatura e exportação **ONNX fp32**
    para inferência em CPU sem PyTorch.
 3. **`src/servidor_web.py`** + **`static/index.html`** — demo web (FastAPI + WebSocket) que
-   percorre as 1000 mensagens ao vivo e exibe o relatório de acurácia no protocolo do paper.
+   percorre ao vivo o **holdout de validação (200 mensagens nunca treinadas)** e exibe
+   o relatório de acurácia no protocolo do paper.
 4. **`src/inferir.py`** — CLI de classificação de mensagens (única ou interativo).
 
 ## 🚀 Quickstart
