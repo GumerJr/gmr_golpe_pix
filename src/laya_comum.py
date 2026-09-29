@@ -83,15 +83,18 @@ def veredito(prob_golpe: float) -> str:
 
 
 def carregar_agente(diretorio_modelo: Path, logger: logging.Logger) -> AgenteSystemOne:
-    """Carrega o checkpoint fine-tunado local, preferindo a exportação ONNX INT8.
+    """Carrega o checkpoint fine-tunado local, preferindo a exportação ONNX (fp32).
 
-    A variante ``laya.int8.onnx`` (gerada pela célula 7 do notebook Colab) roda
-    com ``onnxruntime``, sem alocar os pesos em PyTorch — ideal para CPUs com
-    RAM limitada. Sem ela, cai no ``laya.Agent`` PyTorch (fp16, mais pesado).
+    A variante ``laya.onnx`` (gerada pela célula 7 do notebook Colab) roda com
+    ``onnxruntime``, sem alocar os pesos em PyTorch — ideal para CPUs sem GPU.
+    A exportação é propositalmente **fp32**: a quantização dinâmica INT8 achata
+    os logits da head fine-tunada neste checkpoint e degrada as decisões para
+    p≈0,5 (medido na validação local de 29/09/2026). Sem ONNX, cai no
+    ``laya.Agent`` PyTorch (fp16, mais pesado em RAM).
 
     Args:
         diretorio_modelo: Pasta com ``model.safetensors``, ``encoder/``,
-            ``tokenizer/``, ``rl_agent_config.json`` e, idealmente, ``laya.int8.onnx``.
+            ``tokenizer/``, ``rl_agent_config.json`` e, idealmente, ``laya.onnx``.
         logger: Logger central.
 
     Returns:
@@ -107,11 +110,11 @@ def carregar_agente(diretorio_modelo: Path, logger: logging.Logger) -> AgenteSys
             "Baixe o .zip da célula 8 do notebook no Colab e descompacte nesta pasta."
         )
 
-    onnx_path = diretorio_modelo / "laya.int8.onnx"
+    onnx_path = diretorio_modelo / "laya.onnx"
     if onnx_path.is_file():
         from laya.onnx_agent import ONNXAgent
 
-        logger.info("🧊 Carregando checkpoint ONNX INT8 de %s (onnxruntime, CPU)...", onnx_path)
+        logger.info("🧊 Carregando checkpoint ONNX fp32 de %s (onnxruntime, CPU)...", onnx_path)
         agente = ONNXAgent(str(diretorio_modelo), onnx_path=str(onnx_path))
         logger.info("✅ Modelo ONNX carregado")
         return agente
@@ -119,8 +122,8 @@ def carregar_agente(diretorio_modelo: Path, logger: logging.Logger) -> AgenteSys
     import laya
 
     logger.warning(
-        "⚠️ laya.int8.onnx não encontrado — caindo no PyTorch fp16 (exige ~2 GB de RAM). "
-        "Recomendado: rodar a célula 7 do notebook Colab para exportar o ONNX INT8."
+        "⚠️ laya.onnx não encontrado — caindo no PyTorch fp16 (exige ~2 GB de RAM livres). "
+        "Recomendado: rodar a célula 7 do notebook Colab para exportar o ONNX fp32."
     )
     logger.info("🧠 Carregando checkpoint PyTorch de %s (CPU)...", diretorio_modelo)
     agente = laya.Agent(str(diretorio_modelo), device="cpu")

@@ -46,8 +46,8 @@ data/raw/decisions.csv ─┼─► src/preparar_dataset.py ─► data/processe
    `decisions.csv` (teacher DeepSeek, 100% de acurácia) e gera o dataset no formato oficial de
    fine-tuning do Laya (`state` / `questions` / `gold`), com split estratificado 800/200.
 2. **`notebooks/treinamento_laya_colab.ipynb`** — treino no Google Colab (1× T4): loop RLCD
-   (policy gradient GRPO + cross-entropy), calibração de temperatura e exportação **ONNX INT8**
-   para inferência leve em CPU.
+   (policy gradient GRPO + cross-entropy), calibração de temperatura e exportação **ONNX fp32**
+   para inferência em CPU sem PyTorch.
 3. **`src/servidor_web.py`** + **`static/index.html`** — demo web (FastAPI + WebSocket) que
    percorre as 1000 mensagens ao vivo e exibe o relatório de acurácia no protocolo do paper.
 4. **`src/inferir.py`** — CLI de classificação de mensagens (única ou interativo).
@@ -108,4 +108,5 @@ logging centralizado com horário de Brasília (UTC-3) · colorama.
   [notebook oficial de fine-tuning](https://github.com/NandhaKishorM/laya/blob/main/notebooks/laya_finetune_typed_decisions_2xT4_kaggle.ipynb)
   do qual nosso treino foi adaptado (2×T4 → 1×T4).
 - [`scripts/export_onnx.py`](https://github.com/NandhaKishorM/laya/blob/main/scripts/export_onnx.py) —
-  exportação ONNX com quantização dinâmica INT8 por canal usada para inferência local em CPU.
+  exportação ONNX usada para inferência local em CPU (usamos fp32; a variante INT8 degradou
+  as decisões neste checkpoint — ver `docs/ARQUITETURA.md` §3.4).

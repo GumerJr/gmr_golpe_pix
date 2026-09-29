@@ -45,7 +45,7 @@ rodando 100% local em CPU. O pipeline tem 3 grandes blocos:
 │ 5 treino RLCD: GRPO (σ 0.4→0.1, grupo=4) + CE · AdamW (2.5e-5/1e-4) ·        │
 │   4 épocas · batch efetivo 64 · checkpoint rolante/época                     │
 │ 6 avaliação: acurácia por pergunta · ECE · veredito 3 faixas                 │
-│ 7 exportação ONNX INT8 (scripts/export_onnx.py oficial, per-channel)         │
+│ 7 exportação ONNX fp32 (scripts/export_onnx.py oficial, sem --quantize)      │
 │ 8 zip + download                                                             │
 └───────────────────────────────────────────────────────────────────────────────┘
                  │ models/laya_pix_golpe_finetuned/  (weights + tokenizer + rl_agent_config + laya.int8.onnx)
@@ -85,13 +85,17 @@ mantém o **batch efetivo em 64** sequências. Hiperparâmetros 1:1 com o oficia
 (épocas 4, LRs 2.5e-5/1e-4, σ 0.4→0.1, `w_sph=0.75`, CE peso 1.0). Slice de calibração
 (10%, máx. 400) retido **antes** do treino — temperaturas honestas, sem vazamento.
 
-### 3.4 ONNX INT8 para CPU doméstica
+### 3.4 ONNX fp32 para CPU doméstica
 A máquina-alvo local tem ~5,5 GB de RAM; o load PyTorch fp16 (~2 GB de pico) era morto pelo
-OOM killer. A exportação **ONNX com quantização dinâmica INT8 por canal**
-(`scripts/export_onnx.py --quantize`, oficial do Laya) roda com `onnxruntime` e fração da
-memória. Drift máximo medido pelo autor do Laya com per-channel: 0.09 de probabilidade,
-zero decisões invertidas no benchmark dele. `carregar_agente` prefere `laya.int8.onnx`
-e cai no PyTorch apenas como fallback.
+OOM killer. A exportação **ONNX** (`scripts/export_onnx.py`, oficial do Laya) roda com
+`onnxruntime` sem carregar o grafo em PyTorch.
+
+Decisão empírica (29/09/2026): testamos primeiro a quantização dinâmica INT8 por canal
+(`--quantize`) — drifto desprezível no checkpoint base segundo o autor do Laya, **mas no
+nosso checkpoint fine-tunado ela achatou os logits da head** (temperaturas calibradas ≈ 5,5
+indicam gaps de logit extremos): todas as probabilidades `noul` colapsaram para p≈0,5 na
+validação local. Exportamos então em **fp32** (~1,3 GB), que preserva as decisões.
+`carregar_agente` prefere `laya.onnx` e cai no PyTorch apenas como fallback.
 
 ### 3.5 Protocolo de veredito em 3 faixas (idêntico ao paper)
 `golpe ≥ 0,6` → **GOLPE** · `golpe ≤ 0,4` → **OK** · entre → **REVISAR**.
